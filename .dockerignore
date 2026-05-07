@@ -1,7 +1,67 @@
-node_modules
-npm-debug.log
-.git
+# Dependencies
+node_modules/
+
+# Environment files
 .env
-Dockerfile
-.dockerignore
-*.md
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build files
+
+
+# Docker
+docker-data/
+*.tar
+
+# Keys & Certificates
+*.pem
+*.ppk
+*.key
+*.crt
+*.csr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+tmp/
+temp/
+.cache/
+
+# Coverage
+coverage/
+
+# Runtime files
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Local configs
+*.local
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Kubernetes secrets
+secrets/
+kubeconfig*
+
+# Misc
+*.swp
+*.swo
