@@ -55,6 +55,28 @@ const AudioEngine = (() => {
     Object.keys(humNodes).forEach(stopHum);
   }
 
+  /** Tiny metal tick while magnets hesitate in tension */
+  function playTick(intensity = 0.2) {
+    const c = getCtx();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    const filter = c.createBiquadFilter();
+
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1600 + intensity * 900, c.currentTime);
+    filter.type = 'bandpass';
+    filter.frequency.value = 2200;
+    filter.Q.value = 1.1;
+    gain.gain.setValueAtTime(0.08 * intensity, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.03);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(c.destination);
+    osc.start();
+    osc.stop(c.currentTime + 0.04);
+  }
+
   /** Single snap click */
   function playSnap(intensity = 1.0) {
     const c = getCtx();
@@ -96,6 +118,22 @@ const AudioEngine = (() => {
     thumpGain.connect(c.destination);
     thump.start();
     thump.stop(c.currentTime + 0.12);
+  }
+
+  /** Short table impact after lock */
+  function playImpact(intensity = 0.5) {
+    const c = getCtx();
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180, c.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(52, c.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.18 * intensity, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.14);
+    osc.connect(gain);
+    gain.connect(c.destination);
+    osc.start();
+    osc.stop(c.currentTime + 0.16);
   }
 
   /** Chain reaction — multiple snaps with delay */
@@ -161,5 +199,17 @@ const AudioEngine = (() => {
     });
   }
 
-  return { startHum, setHumVolume, stopHum, stopAllHums, playSnap, playChainReaction, playBoundaryHit, playTurnChime, playWin };
+  return {
+    startHum,
+    setHumVolume,
+    stopHum,
+    stopAllHums,
+    playTick,
+    playSnap,
+    playImpact,
+    playChainReaction,
+    playBoundaryHit,
+    playTurnChime,
+    playWin
+  };
 })();

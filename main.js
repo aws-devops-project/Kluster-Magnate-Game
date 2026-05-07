@@ -189,16 +189,15 @@ function startPracticeMode(magnetCount = 20) {
 
 /* ── Engine bootstrap ────────────────────────────────────── */
 function initGameEngine(mode) {
+  State.paused = false;
   UI.showScreen('screen-game');
+  UI.showPause(false);
+  UI.showReplayBar(false);
+  const snapOverlay = document.getElementById('overlay-snap');
+  if (snapOverlay) snapOverlay.classList.add('hidden');
 
   const canvas = document.getElementById('game-canvas');
-
-  // Size canvas to available space
-  const gameWrap = canvas.parentElement;
-  const wrapRect = gameWrap.getBoundingClientRect();
-  const size = Math.min(wrapRect.width, wrapRect.height, 640);
-  canvas.style.width  = size + 'px';
-  canvas.style.height = size + 'px';
+  syncCanvasSize(canvas);
 
   Game.init(canvas, {
     mode,
@@ -222,47 +221,59 @@ function initGameEngine(mode) {
     UI.setHint('Click inside the arena to place your magnet');
   }
 
-  // Canvas click handler
   canvas.removeEventListener('click', onCanvasClick);
   canvas.addEventListener('click', onCanvasClick);
 
-  // Touch support
   canvas.removeEventListener('touchend', onCanvasTouch);
   canvas.addEventListener('touchend', onCanvasTouch, { passive: false });
 }
 
+function syncCanvasSize(canvas = document.getElementById('game-canvas')) {
+  if (!canvas) return;
+  const gameWrap = canvas.parentElement;
+  if (!gameWrap) return;
+  const wrapRect = gameWrap.getBoundingClientRect();
+  const size = Math.max(1, Math.min(wrapRect.width, wrapRect.height, 640));
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+}
+
 /* ── Click/Touch to place ───────────────────────────────── */
+function getCanvasPoint(event, canvas) {
+  if (!canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const point = event.changedTouches?.[0] || event.touches?.[0] || event;
+  if (!point || !rect.width || !rect.height) return null;
+
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (point.clientX - rect.left) * scaleX,
+    y: (point.clientY - rect.top) * scaleY
+  };
+}
+
 function onCanvasClick(e) {
   if (State.paused) return;
-  const rect = e.target.getBoundingClientRect();
-  const scaleX = e.target.width  / rect.width;
-  const scaleY = e.target.height / rect.height;
-  const x = (e.clientX - rect.left) * scaleX;
-  const y = (e.clientY - rect.top)  * scaleY;
-  handlePlaceAttempt(x, y);
+  const point = getCanvasPoint(e, e.currentTarget);
+  if (!point) return;
+  handlePlaceAttempt(point.x, point.y);
 }
 
 function onCanvasTouch(e) {
+  if (State.paused) return;
   e.preventDefault();
-  if (!e.changedTouches.length) return;
-  const touch = e.changedTouches[0];
-  const rect = e.target.getBoundingClientRect();
-  const scaleX = e.target.width  / rect.width;
-  const scaleY = e.target.height / rect.height;
-  const x = (touch.clientX - rect.left) * scaleX;
-  const y = (touch.clientY - rect.top)  * scaleY;
-  handlePlaceAttempt(x, y);
+  const point = getCanvasPoint(e, e.currentTarget);
+  if (!point) return;
+  handlePlaceAttempt(point.x, point.y);
 }
 
 function handlePlaceAttempt(x, y) {
   if (!State.gameRunning || State.paused) return;
 
-  // Check inside arena
-  const center = Game.getArenaCenter();
-  const radius = Game.getArenaRadius();
-  const dist = Math.hypot(x - center.x, y - center.y);
-  if (dist > radius - 15) {
-    UI.setHint('Place inside the arena boundary!');
+  const validation = Game.validatePlacement(x, y);
+  if (!validation.valid) {
+    UI.setHint(validation.reason);
     setTimeout(() => UI.setHint('Click inside the arena to place your magnet'), 1500);
     return;
   }
@@ -316,6 +327,10 @@ function handleSnap({ culpritPlayer, connectedIds, chainCount }) {
   const culpritIdx = State.players.findIndex(p => p.id === culpritPlayer);
   if (culpritIdx !== -1) {
     State.players[culpritIdx].magnets += chainCount;
+    State.players[culpritIdx].total = Math.max(
+      State.players[culpritIdx].total,
+      State.players[culpritIdx].magnets
+    );
     UI.setMagnetCount(
       State.players[culpritIdx].id,
       State.players[culpritIdx].total,
@@ -328,7 +343,7 @@ function handleSnap({ culpritPlayer, connectedIds, chainCount }) {
 
   State.pendingSnap = { culpritPlayer, connectedIds, chainCount };
 
-  // Show snap overlay, then replay bar
+  // Chain reaction ends the turn after the penalty is applied.
   UI.showSnapOverlay({ culpritPlayer, chainCount }, () => {
     UI.showReplayBar(true);
   });
@@ -446,10 +461,5 @@ document.addEventListener('keydown', e => {
 /* ── Resize handling ────────────────────────────────────── */
 window.addEventListener('resize', () => {
   if (!State.gameRunning) return;
-  const canvas = document.getElementById('game-canvas');
-  const gameWrap = canvas.parentElement;
-  const wrapRect = gameWrap.getBoundingClientRect();
-  const size = Math.min(wrapRect.width, wrapRect.height, 640);
-  canvas.style.width  = size + 'px';
-  canvas.style.height = size + 'px';
+  syncCanvasSize();
 });

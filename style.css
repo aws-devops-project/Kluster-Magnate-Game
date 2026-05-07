@@ -297,6 +297,11 @@ select option { background: #1a1a2e; }
    WAITING ROOM
    ============================================================ */
 #screen-waiting { gap: 24px; }
+#screen-waiting,
+#screen-result {
+  padding: 24px 16px;
+  overflow: auto;
+}
 #screen-waiting h2 { font-size: 1.2rem; color: var(--text-secondary); letter-spacing: .1em; }
 
 .waiting-container {
@@ -388,6 +393,8 @@ select option { background: #1a1a2e; }
   justify-content: flex-start;
   background: var(--bg-deep);
   gap: 0;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* HUD */
@@ -490,17 +497,22 @@ select option { background: #1a1a2e; }
 /* Game arena wrap */
 .game-wrap {
   flex: 1;
+  min-height: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
+  padding: 16px;
 }
 
 #game-canvas {
   display: block;
   cursor: crosshair;
   touch-action: none;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .placement-hint {
@@ -517,6 +529,8 @@ select option { background: #1a1a2e; }
   backdrop-filter: blur(8px);
   pointer-events: none;
   transition: opacity .3s;
+  width: min(90%, 420px);
+  text-align: center;
 }
 
 /* Replay bar */
@@ -524,6 +538,7 @@ select option { background: #1a1a2e; }
   width: 100%;
   padding: 12px 20px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
   background: rgba(8,8,15,0.85);
@@ -706,6 +721,207 @@ select option { background: #1a1a2e; }
   .hud-count { font-size: 1.4rem; }
   .result-actions { flex-direction: column; }
   .waiting-container { padding: 32px 24px; }
+}
+
+@media (max-width: 1024px) {
+  #screen-lobby {
+    padding: 32px 16px;
+  }
+
+  .lobby-container {
+    gap: 28px;
+  }
+
+  .lobby-cards {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .lobby-card {
+    padding: 24px 22px 28px;
+  }
+
+  .hud {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .hud-player {
+    min-width: 110px;
+  }
+
+  .hud-count {
+    font-size: 1.5rem;
+  }
+
+  .turn-indicator {
+    padding: 8px 14px;
+    font-size: .82rem;
+  }
+
+  .game-wrap {
+    padding: 12px;
+  }
+
+  .result-container,
+  .waiting-container,
+  .overlay-card {
+    width: min(100%, 560px);
+  }
+}
+
+@media (max-width: 768px) {
+  .btn {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .card-options label {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  select {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .join-row {
+    flex-direction: column;
+  }
+
+  #screen-waiting,
+  #screen-result {
+    justify-content: flex-start;
+  }
+
+  .waiting-container {
+    padding: 24px 20px;
+    gap: 18px;
+  }
+
+  .back-btn {
+    position: static;
+    align-self: flex-start;
+    padding-left: 0;
+  }
+
+  .room-code-display {
+    font-size: clamp(2rem, 9vw, 3rem);
+    letter-spacing: .18em;
+    text-align: center;
+  }
+
+  .waiting-players {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .hud {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+  }
+
+  .hud-player {
+    min-width: 0;
+  }
+
+  .hud-player.p2-hud {
+    justify-self: end;
+  }
+
+  .hud-magnets {
+    flex-wrap: wrap;
+  }
+
+  .magnet-dot-container {
+    max-width: 64px;
+  }
+
+  .placement-hint {
+    bottom: 12px;
+    padding: 9px 14px;
+    font-size: .78rem;
+  }
+
+  .result-container {
+    padding: 28px 20px;
+  }
+
+  .result-stats,
+  .result-actions {
+    flex-direction: column;
+  }
+
+  .overlay-card {
+    min-width: 0;
+    width: min(100%, 420px);
+    padding: 28px 20px;
+  }
+
+  .snap-text {
+    font-size: clamp(2rem, 11vw, 3.5rem);
+  }
+
+  .snap-info {
+    width: min(90%, 420px);
+    font-size: .95rem;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  #screen-lobby {
+    padding: 24px 12px;
+  }
+
+  .logo-title span {
+    display: block;
+    margin-left: 0;
+  }
+
+  .logo-sub {
+    letter-spacing: .1em;
+  }
+
+  .lobby-card {
+    border-radius: 22px;
+    padding: 22px 18px 24px;
+  }
+
+  .hud {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .hud-center {
+    order: -1;
+    margin-bottom: 2px;
+  }
+
+  .hud-player.p2-hud,
+  .hud-player.p1-hud {
+    align-items: flex-start;
+    text-align: left;
+    justify-self: stretch;
+  }
+
+  .hud-player.p2-hud .hud-magnets {
+    justify-content: flex-start;
+  }
+
+  .turn-indicator {
+    width: 100%;
+    text-align: center;
+  }
+
+  .replay-bar {
+    padding: 12px;
+  }
+
+  .replay-bar .btn {
+    width: 100%;
+  }
 }
 
 /* Scrollbar */

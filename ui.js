@@ -28,8 +28,9 @@ const UI = (() => {
 
     const dotContainer = document.getElementById(`p${player}-magnet-dots`);
     if (dotContainer) {
+      const slotCount = Math.max(total, remaining);
       dotContainer.innerHTML = '';
-      for (let i = 0; i < total; i++) {
+      for (let i = 0; i < slotCount; i++) {
         const dot = document.createElement('span');
         dot.className = `m-dot${player === 2 ? ' p2' : ''}${i >= remaining ? ' used' : ''}`;
         dotContainer.appendChild(dot);
