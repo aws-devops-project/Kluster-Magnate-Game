@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Kluster Magnate — a real-time multiplayer magnetic strategy game where precision placement and chain reactions decide the winner." />
+  <title>Kluster Magnate — Magnetic Strategy Game</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <!-- Matter.js Physics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+
+  <!-- Socket.IO Client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <link rel="stylesheet" href="style.css?v=2" />
+</head>
+<body>
+
+  <!-- ===================== LOBBY SCREEN ===================== -->
+  <div id="screen-lobby" class="screen active">
+    <div class="lobby-bg-glow"></div>
+    <div class="lobby-container">
+      <div class="logo-wrap">
+        <div class="logo-icon">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="40" r="36" stroke="url(#lg1)" stroke-width="3"/>
+            <circle cx="40" cy="40" r="20" fill="url(#lg2)" opacity="0.7"/>
+            <circle cx="28" cy="32" r="7" fill="#e879f9"/>
+            <circle cx="52" cy="32" r="7" fill="#06b6d4"/>
+            <circle cx="40" cy="52" r="7" fill="#a78bfa"/>
+            <!-- field lines -->
+            <path d="M35 32 Q40 40 45 32" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.5"/>
+            <path d="M28 39 Q40 46 52 39" stroke="#fff" stroke-width="1.5" fill="none" opacity="0.5"/>
+            <defs>
+              <linearGradient id="lg1" x1="4" y1="4" x2="76" y2="76" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#e879f9"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+              <radialGradient id="lg2" cx="40" cy="40" r="20" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#7c3aed" stop-opacity="0.8"/>
+                <stop offset="1" stop-color="#0e0e1a" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="logo-title">KLUSTER<span>MAGNATE</span></h1>
+        <p class="logo-sub">A Magnetic Strategy Game</p>
+      </div>
+
+      <div class="lobby-cards">
+        <!-- Single Player / Local 2P -->
+        <div class="lobby-card" id="card-local">
+          <div class="card-icon">⚡</div>
+          <h2>Local Match</h2>
+          <p>Play against a friend on the same screen — pass-and-play style.</p>
+          <div class="card-options">
+            <label>Magnets per player
+              <select id="local-magnet-count">
+                <option value="8">8 (Quick)</option>
+                <option value="12" selected>12 (Standard)</option>
+                <option value="16">16 (Extended)</option>
+              </select>
+            </label>
+          </div>
+          <button class="btn btn-primary" id="btn-local-start">Play Local</button>
+        </div>
+
+        <!-- Online -->
+        <div class="lobby-card featured" id="card-online">
+          <div class="card-badge">MULTIPLAYER</div>
+          <div class="card-icon">🌐</div>
+          <h2>Online Match</h2>
+          <p>Create a room or join with a code. Real-time physics sync.</p>
+          <div class="card-options">
+            <input type="text" id="online-name" placeholder="Your nickname" maxlength="16" autocomplete="off" />
+          </div>
+          <div class="online-buttons">
+            <button class="btn btn-primary" id="btn-create-room">Create Room</button>
+            <div class="divider-or">or</div>
+            <div class="join-row">
+              <input type="text" id="join-code" placeholder="Room code" maxlength="6" autocomplete="off" />
+              <button class="btn btn-secondary" id="btn-join-room">Join</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Solo Practice -->
+        <div class="lobby-card" id="card-practice">
+          <div class="card-icon">🔬</div>
+          <h2>Practice Mode</h2>
+          <p>Experiment with magnetic physics. No turns, no rules — just chaos.</p>
+          <div class="card-options">
+            <label>Magnet count
+              <select id="practice-count">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="30">30</option>
+              </select>
+            </label>
+          </div>
+          <button class="btn btn-secondary" id="btn-practice">Open Sandbox</button>
+        </div>
+      </div>
+
+      <div id="connection-status" class="conn-status hidden">
+        <span class="conn-dot"></span>
+        <span id="conn-text">Connecting…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== WAITING ROOM ===================== -->
+  <div id="screen-waiting" class="screen">
+    <div class="waiting-container">
+      <button class="back-btn" id="btn-back-lobby">← Back</button>
+      <h2>Room Code</h2>
+      <div class="room-code-display" id="room-code-display">------</div>
+      <p>Share this code with your opponent</p>
+      <button class="btn btn-secondary copy-btn" id="btn-copy-code">📋 Copy Code</button>
+      <div class="waiting-players">
+        <div class="player-slot" id="slot-p1">
+          <div class="player-avatar p1-color">P1</div>
+          <span id="slot-p1-name">You</span>
+          <span class="ready-badge">READY</span>
+        </div>
+        <div class="vs-label">VS</div>
+        <div class="player-slot" id="slot-p2">
+          <div class="player-avatar p2-color">?</div>
+          <span id="slot-p2-name">Waiting…</span>
+          <span class="waiting-dots">●●●</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <div id="screen-game" class="screen">
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-player p1-hud" id="hud-p1">
+        <div class="hud-name" id="hud-p1-name">Player 1</div>
+        <div class="hud-magnets">
+          <span class="magnet-dot-container" id="p1-magnet-dots"></span>
+          <span class="hud-count" id="hud-p1-count">12</span>
+          <span class="hud-label">magnets</span>
+        </div>
+      </div>
+
+      <div class="hud-center">
+        <div class="turn-indicator" id="turn-indicator">
+          <div class="turn-glow"></div>
+          <span id="turn-text">P1's Turn</span>
+        </div>
+        <button class="btn-icon" id="btn-pause" title="Pause">⏸</button>
+      </div>
+
+      <div class="hud-player p2-hud" id="hud-p2">
+        <div class="hud-name" id="hud-p2-name">Player 2</div>
+        <div class="hud-magnets">
+          <span class="hud-count" id="hud-p2-count">12</span>
+          <span class="hud-label">magnets</span>
+          <span class="magnet-dot-container" id="p2-magnet-dots"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Canvas -->
+    <div class="game-wrap">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Placement Preview -->
+      <div id="placement-hint" class="placement-hint">
+        Click inside the arena to place your magnet
+      </div>
+    </div>
+
+    <!-- Replay Controls (shown after chain reaction) -->
+    <div id="replay-bar" class="replay-bar hidden">
+      <button class="btn btn-secondary" id="btn-replay">▶ Slow Replay</button>
+      <button class="btn btn-primary" id="btn-next-turn">Next Turn →</button>
+    </div>
+  </div>
+
+  <!-- ===================== RESULT SCREEN ===================== -->
+  <div id="screen-result" class="screen">
+    <div class="result-container">
+      <div class="result-trophy">🏆</div>
+      <h2 id="result-title">Player 1 Wins!</h2>
+      <p id="result-subtitle">All magnets placed successfully.</p>
+      <div class="result-stats">
+        <div class="stat-box">
+          <span class="stat-label">Turns played</span>
+          <span class="stat-val" id="stat-turns">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Chain reactions</span>
+          <span class="stat-val" id="stat-chains">0</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-label">Longest chain</span>
+          <span class="stat-val" id="stat-longest">0</span>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn btn-primary" id="btn-rematch">⚡ Rematch</button>
+        <button class="btn btn-secondary" id="btn-main-menu">🏠 Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== PAUSE OVERLAY ===================== -->
+  <div id="overlay-pause" class="overlay hidden">
+    <div class="overlay-card">
+      <h3>Paused</h3>
+      <button class="btn btn-primary" id="btn-resume">▶ Resume</button>
+      <button class="btn btn-secondary" id="btn-quit-pause">Quit Match</button>
+    </div>
+  </div>
+
+  <!-- ===================== SNAP OVERLAY ===================== -->
+  <div id="overlay-snap" class="overlay snap-overlay hidden">
+    <div class="snap-burst">
+      <div class="snap-ring r1"></div>
+      <div class="snap-ring r2"></div>
+      <div class="snap-ring r3"></div>
+      <div class="snap-text" id="snap-text">SNAP!</div>
+    </div>
+    <div class="snap-info" id="snap-info">3 magnets connected! +3 penalty</div>
+  </div>
+
+  <!-- Audio elements (synthesized via WebAudio) -->
+  <div id="audio-root" style="display:none;"></div>
+
+  <script src="audio.js?v=2"></script>
+  <script src="game.js?v=2"></script>
+  <script src="ui.js?v=2"></script>
+  <script src="multiplayer.js?v=2"></script>
+  <script src="main.js?v=2"></script>
+</body>
+</html>
